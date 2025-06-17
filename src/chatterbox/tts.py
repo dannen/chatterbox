@@ -1,8 +1,11 @@
+# chatterbox/tts.py
+
 from dataclasses import dataclass
 from pathlib import Path
 
 import librosa
 import torch
+import numpy as np
 import perth
 import torch.nn.functional as F
 from huggingface_hub import hf_hub_download
@@ -209,13 +212,19 @@ class ChatterboxTTS:
         self,
         text,
         repetition_penalty=1.2,
-        min_p=0.05,
         top_p=1.0,
         audio_prompt_path=None,
         exaggeration=0.5,
         cfg_weight=0.5,
         temperature=0.8,
+        seed=None,
     ):
+        if seed is not None:
+            torch.manual_seed(seed)
+            np.random.seed(seed)
+            if torch.cuda.is_available():
+                torch.cuda.manual_seed_all(seed)
+
         if audio_prompt_path:
             self.prepare_conditionals(audio_prompt_path, exaggeration=exaggeration)
         else:
@@ -250,7 +259,6 @@ class ChatterboxTTS:
                 temperature=temperature,
                 cfg_weight=cfg_weight,
                 repetition_penalty=repetition_penalty,
-                min_p=min_p,
                 top_p=top_p,
             )
             # Extract only the conditional batch.
